@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>森 MORI — into the green</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@100;200;300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --deep: #050e06;
+  --forest: #0c1f0e;
+  --moss: #1a3d1e;
+  --fern: #2d6b35;
+  --leaf: #4a9e50;
+  --dew: #9de87a;
+  --mist: #c8f0b0;
+  --glow: rgba(157, 232, 122, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--deep);
+  color: var(--mist);
+  font-family: 'EB Garamond', serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* CUSTOM CURSOR */
+.cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: var(--dew);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  position: fixed;
+  width: 32px; height: 32px;
+  border: 1px solid rgba(157, 232, 122, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+}
+
+/* ANIMATED RAIN CANVAS */
+canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.25;
+}
+
+/* NOISE TEXTURE OVERLAY */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+}
+
+/* RADIAL GLOW BG */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 40%, rgba(45, 107, 53, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 85% 70%, rgba(30, 80, 35, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(74, 158, 80, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 60px;
+  background: linear-gradient(to bottom, rgba(5,14,6,0.9), transparent);
+}
+
+.nav-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+  color: var(--dew);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 40px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 200;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(200, 240, 176, 0.5);
+  text-decoration: none;
+  transition: color 0.4s ease;
+}
+.nav-links a:hover { color: var(--dew); }
+
+/* ─── HERO ─── */
+.hero {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 10vw;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.hero-eyebrow {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 200;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--leaf);
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: riseIn 1.2s ease 0.3s forwards;
+}
+
+.hero-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(4rem, 10vw, 9rem);
+  font-weight: 400;
+  line-height: 0.95;
+  color: rgba(200, 240, 176, 0.95);
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: riseIn 1.4s ease 0.5s forwards;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--dew);
+  display: block;
+}
+
+.hero-subtitle {
+  font-size: 1.15rem;
+  font-style: italic;
+  font-weight: 400;
+  color: rgba(157, 232, 122, 0.55);
+  max-width: 380px;
+  line-height: 1.9;
+  margin-bottom: 60px;
+  opacity: 0;
+  animation: riseIn 1.4s ease 0.8s forwards;
+}
+
+.hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  text-decoration: none;
+  opacity: 0;
+  animation: riseIn 1.4s ease 1.1s forwards;
+}
+
+.hero-cta span {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 200;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--dew);
+}
+
+.cta-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, var(--dew), transparent);
+  transition: width 0.4s ease;
+}
+.hero-cta:hover .cta-line { width: 100px; }
+
+/* floating leaf particles */
+.leaf-particle {
+  position: absolute;
+  width: 6px; height: 10px;
+  background: radial-gradient(ellipse, rgba(74,158,80,0.6), transparent);
+  border-radius: 50% 0 50% 0;
+  animation: floatLeaf linear infinite;
+  opacity: 0;
+}
+
+@keyframes floatLeaf {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-20vh) rotate(720deg); opacity: 0; }
+}
+
+/* big decorative kanji */
+.hero-kanji {
+  position: absolute;
+  right: 8vw;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(12rem, 22vw, 22rem);
+  color: rgba(45, 107, 53, 0.08);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -0.05em;
+  opacity: 0;
+  animation: riseIn 2s ease 0.2s forwards;
+}
+
+/* ─── DIVIDER ─── */
+.section-divider {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 10vw;
+  margin: 10px 0;
+}
+.section-divider::before, .section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(74, 158, 80, 0.3), transparent);
+}
+.section-divider span {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.7rem;
+  color: rgba(74,158,80,0.5);
+  letter-spacing: 0.3em;
+  white-space: nowrap;
+}
+
+/* ─── QUOTES SECTION ─── */
+.quotes-section {
+  position: relative;
+  z-index: 10;
+  padding: 80px 0;
+}
+
+.quotes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.quote-block {
+  padding: 55px 60px;
+  background: rgba(10, 25, 12, 0.6);
+  border: 1px solid rgba(45, 107, 53, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: background 0.5s ease, border-color 0.5s ease;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.quote-block.visible {
+  animation: riseIn 0.9s ease forwards;
+}
+
+.quote-block:hover {
+  background: rgba(15, 35, 18, 0.8);
+  border-color: rgba(74, 158, 80, 0.3);
+}
+
+.quote-block::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(157, 232, 122, 0.2), transparent);
+}
+
+.quote-block .glow-corner {
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, rgba(157,232,122,0.06), transparent 70%);
+  border-radius: 50%;
+  transition: transform 0.5s ease;
+}
+.quote-block:hover .glow-corner {
+  transform: scale(2);
+}
+
+.quote-number {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 200;
+  letter-spacing: 0.35em;
+  color: rgba(74, 158, 80, 0.45);
+  margin-bottom: 24px;
+  display: block;
+}
+
+.quote-text {
+  font-size: 1.25rem;
+  font-style: italic;
+  line-height: 1.9;
+  color: rgba(200, 240, 176, 0.88);
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.quote-attr {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 300;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(157, 232, 122, 0.4);
+}
+
+/* wide quote */
+.quote-block.wide {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 70px 100px;
+}
+.quote-block.wide .quote-text {
+  font-size: 1.7rem;
+  max-width: 700px;
+}
+
+/* ─── NATURE STRIP ─── */
+.nature-strip {
+  position: relative;
+  z-index: 10;
+  padding: 100px 10vw;
+  display: flex;
+  gap: 80px;
+  align-items: flex-start;
+}
+
+.strip-label {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 200;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--leaf);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  flex-shrink: 0;
+  padding-top: 10px;
+}
+
+.strip-content {
+  flex: 1;
+}
+
+.strip-content h2 {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: rgba(200, 240, 176, 0.9);
+  margin-bottom: 30px;
+}
+
+.strip-content h2 em {
+  font-style: italic;
+  color: var(--dew);
+}
+
+.strip-content p {
+  font-size: 1.1rem;
+  font-style: italic;
+  line-height: 2;
+  color: rgba(157, 232, 122, 0.5);
+  max-width: 480px;
+}
+
+.icon-row {
+  display: flex;
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-circle {
+  width: 50px; height: 50px;
+  border: 1px solid rgba(74,158,80,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  transition: all 0.4s ease;
+  background: rgba(12, 31, 14, 0.5);
+}
+.icon-circle:hover {
+  border-color: var(--dew);
+  background: rgba(45,107,53,0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(157,232,122,0.1);
+}
+
+.icon-label {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 200;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(157,232,122,0.35);
+}
+
+/* ─── FOOTER ─── */
+footer {
+  position: relative;
+  z-index: 10;
+  padding: 60px 10vw;
+  border-top: 1px solid rgba(45,107,53,0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+footer .foot-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.4rem;
+  color: rgba(157,232,122,0.4);
+  letter-spacing: 0.3em;
+}
+
+footer .foot-text {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 200;
+  letter-spacing: 0.3em;
+  color: rgba(74,158,80,0.3);
+  text-transform: uppercase;
+}
+
+/* ─── SCROLL INDICATOR ─── */
+.scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: riseIn 1s ease 1.8s forwards;
+  z-index: 10;
+}
+.scroll-hint span {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(74,158,80,0.4);
+}
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--leaf), transparent);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 0.9; transform: scaleY(1.2); }
+}
+
+/* ─── KEYFRAMES ─── */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  nav { padding: 20px 24px; }
+  .nav-links { display: none; }
+  .hero { padding: 0 6vw; }
+  .hero-kanji { display: none; }
+  .quotes-grid { grid-template-columns: 1fr; padding: 0 20px; }
+  .quote-block.wide { grid-column: span 1; padding: 50px 30px; }
+  .nature-strip { flex-direction: column; gap: 30px; padding: 60px 6vw; }
+  .strip-label { writing-mode: horizontal-tb; transform: none; }
+  footer { flex-direction: column; gap: 20px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<canvas id="rain"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">森 MORI</a>
+  <ul class="nav-links">
+    <li><a href="#quotes">Quotes</a></li>
+    <li><a href="#about">Nature</a></li>
+    <li><a href="#">Gallery</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">✦ after the rain ✦</p>
+  <h1 class="hero-title">
+    into the<br>
+    <em>green</em>
+  </h1>
+  <p class="hero-subtitle">Where every leaf holds a universe of light, and the world is quietly, endlessly alive.</p>
+  <a href="#quotes" class="hero-cta">
+    <span>enter the forest</span>
+    <div class="cta-line"></div>
+  </a>
+  <div class="hero-kanji">森雨</div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>scroll</span>
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="section-divider" id="quotes">
+  <span>✦ цитати / quotes ✦</span>
+</div>
+
+<!-- QUOTES -->
+<section class="quotes-section">
+  <div class="quotes-grid">
+
+    <div class="quote-block" data-delay="0">
+      <div class="glow-corner"></div>
+      <span class="quote-number">01 / rain</span>
+      <p class="quote-text">The world is washed clean after the rain — every leaf a mirror, every droplet a tiny universe holding the whole sky.</p>
+      <span class="quote-attr">— on rainy afternoons</span>
+    </div>
+
+    <div class="quote-block" data-delay="100">
+      <div class="glow-corner"></div>
+      <span class="quote-number">02 / light</span>
+      <p class="quote-text">There is something sacred about the way light finds itself through wet leaves — the forest breathing in soft green silence.</p>
+      <span class="quote-attr">— forest whispers</span>
+    </div>
+
+    <div class="quote-block wide" data-delay="200">
+      <div class="glow-corner"></div>
+      <div>
+        <span class="quote-number" style="text-align:center; display:block; margin-bottom:20px;">03 / arrival</span>
+        <p class="quote-text">Rain does not fall — it arrives. Gently, without apology, turning the ordinary world luminous and trembling and alive.</p>
+        <span class="quote-attr" style="display:block; margin-top:28px;">— weather & wonder</span>
+      </div>
+    </div>
+
+    <div class="quote-block" data-delay="300">
+      <div class="glow-corner"></div>
+      <span class="quote-number">04 / memory</span>
+      <p class="quote-text">I collect rainy days the way leaves collect water — holding each one carefully, finding them beautiful because they cannot last.</p>
+      <span class="quote-attr">— ephemeral things</span>
+    </div>
+
+    <div class="quote-block" data-delay="400">
+      <div class="glow-corner"></div>
+      <span class="quote-number">05 / colour</span>
+      <p class="quote-text">Between the storm and the stillness lives a green that only exists just after — deep, dripping, impossibly alive.</p>
+      <span class="quote-attr">— shades of green</span>
+    </div>
+
+    <div class="quote-block wide" data-delay="500">
+      <div class="glow-corner"></div>
+      <div>
+        <span class="quote-number" style="text-align:center; display:block; margin-bottom:20px;">06 / 森</span>
+        <p class="quote-text">To stand in the forest after rain is to understand — without language — what it means to be small, and held, and home.</p>
+        <span class="quote-attr" style="display:block; margin-top:28px;">— mori / forest</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="section-divider" id="about">
+  <span>✦ nature / 自然 ✦</span>
+</div>
+
+<!-- NATURE STRIP -->
+<section class="nature-strip">
+  <span class="strip-label">elements</span>
+  <div class="strip-content">
+    <h2>the quiet<br>things that <em>grow</em></h2>
+    <p>In the space between raindrops, in the shimmer of a wet leaf catching light — there is a language older than words. This is where we return.</p>
+    <div class="icon-row">
+      <div class="icon-item">
+        <div class="icon-circle">🌿</div>
+        <span class="icon-label">foliage</span>
+      </div>
+      <div class="icon-item">
+        <div class="icon-circle">🌧️</div>
+        <span class="icon-label">rain</span>
+      </div>
+      <div class="icon-item">
+        <div class="icon-circle">✨</div>
+        <span class="icon-label">dewlight</span>
+      </div>
+      <div class="icon-item">
+        <div class="icon-circle">🍃</div>
+        <span class="icon-label">wind</span>
+      </div>
+      <div class="icon-item">
+        <div class="icon-circle">🌱</div>
+        <span class="icon-label">growth</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="foot-logo">森</span>
+  <span class="foot-text">into the green — a quiet place</span>
+  <span class="foot-text">2025 ✦ mori</span>
+</footer>
+
+<script>
+// CURSOR
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+});
+
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) *.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+document.querySelectorAll('a, .icon-circle, .quote-block').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.width = '50px';
+    ring.style.height = '50px';
+    ring.style.borderColor = 'rgba(157, 232, 122, 0.7)';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.width = '32px';
+    ring.style.height = '32px';
+    ring.style.borderColor = 'rgba(157, 232, 122, 0.4)';
+  });
+});
+
+// RAIN CANVAS
+const canvas = document.getElementById('rain');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const drops = Array.from({length: 120}, () => ({
+  x: Math.random() * window.innerWidth,
+  y: Math.random() * window.innerHeight,
+  len: Math.random() * 15 + 8,
+  speed: Math.random() * 3 + 1.5,
+  opacity: Math.random() * 0.4 + 0.1,
+  width: Math.random() * 0.8 + 0.3
+}));
+
+function drawRain() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drops.forEach(d => {
+    ctx.beginPath();
+    ctx.moveTo(d.x, d.y);
+    ctx.lineTo(d.x - 1, d.y + d.len);
+    ctx.strokeStyle = `rgba(157, 232, 122, ${d.opacity})`;
+    ctx.lineWidth = d.width;
+    ctx.stroke();
+
+    // dew droplet at bottom
+    ctx.beginPath();
+    ctx.arc(d.x - 0.5, d.y + d.len, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200, 240, 176, ${d.opacity * 0.6})`;
+    ctx.fill();
+
+    d.y += d.speed;
+    if (d.y > canvas.height + 20) {
+      d.y = -20;
+      d.x = Math.random() * canvas.width;
+    }
+  });
+  requestAnimationFrame(drawRain);
+}
+drawRain();
+
+// LEAF PARTICLES
+for (let i = 0; i < 12; i++) {
+  const leaf = document.createElement('div');
+  leaf.className = 'leaf-particle';
+  leaf.style.cssText = `
+    left: ${Math.random() * 100}%;
+    animation-duration: ${Math.random() * 15 + 12}s;
+    animation-delay: ${Math.random() * 10}s;
+    width: ${Math.random() * 6 + 4}px;
+    height: ${Math.random() * 8 + 6}px;
+    opacity: 0;
+  `;
+  document.querySelector('.hero').appendChild(leaf);
+}
+
+// SCROLL REVEAL for quote blocks
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      const delay = entry.target.dataset.delay || 0;
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, parseInt(delay));
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.quote-block').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
